@@ -1402,11 +1402,12 @@ Preconditions:
   timeout (`remote_conversation.py`, `run()`). The server's `/run` checks its
   live run task before reading the status under that lock, so it answers 409
   at once and the second `run()` joins the run instead of raising
-  `ConversationRunError` wrapping `ReadTimeout`. The agent's model is `LONG_STUB`, which asks for exactly that `terminal` call
-  with a 90 s tool timeout: a real model chooses its own `timeout`, and
-  without one the terminal tool returns after 30 s of silence, which races
-  the SDK's own 30 s. The probe records how the second `run()` ended and
-  asserts that it waited and returned at `finished`.
+  `ConversationRunError` wrapping `ReadTimeout`. The agent's model is
+  `LONG_STUB`, which asks for exactly that `terminal` call with a 90 s tool
+  timeout: a real model chooses its own `timeout`, and without one the
+  terminal tool returns after 30 s of silence, which races the SDK's own
+  30 s. The probe records how the second `run()` ended and asserts that it
+  waited and returned at `finished`.
   ```sh
   control-agent-server exec --env PYTHONPATH="$F33" --save F33.conversation-run-join-long-tool/probe -- .venv/bin/python - <<'PY'
   import os
