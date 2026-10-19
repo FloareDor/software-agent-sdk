@@ -372,7 +372,9 @@ class LLMSummarizingCondenser(RollingCondenser):
         forgotten_events: list[LLMConvertibleEvent] = []
         if protected_prefix < len(view):
             forgetting_start = view.manipulation_indices.find_next(protected_prefix)
-            midpoint = (protected_prefix + len(view) + 1) // 2
+            # Size from the actual start: an atomic unit can push it past the
+            # midpoint implied by the protected prefix alone.
+            midpoint = (forgetting_start + len(view) + 1) // 2
             # Cut at the last boundary before the midpoint so recent events
             # survive; overshoot only when no such boundary exists.
             forgetting_end = max(

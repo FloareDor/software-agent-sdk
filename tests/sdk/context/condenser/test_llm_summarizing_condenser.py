@@ -1332,3 +1332,28 @@ def test_truncation_fallback_raises_when_nothing_is_forgettable(
         match="Neither summarization nor truncation",
     ):
         condenser.condense(view)
+
+
+def test_truncation_fallback_still_cuts_past_a_protected_tool_loop(
+    mock_llm: LLM,
+) -> None:
+    """A tool loop that overruns keep_first must not block a later safe cut.
+
+    The loop pushes the actual start of the forgettable range past the
+    midpoint implied by ``keep_first`` alone; the fallback must size its cut
+    from that actual start instead of reporting nothing is forgettable.
+    """
+    condenser = _dead_summarizer_condenser(mock_llm, keep_first=4)
+    events: list[Event] = [_system_prompt_event(), message_event("Original task")]
+    for i in range(6):
+        events.extend(_tool_pair(f"resp-{i}", f"call-{i}", thinking=(i == 0)))
+    events.extend(message_event(f"Later {i}") for i in range(4))
+    events.append(CondensationRequest())
+    view = View.from_events(events)
+
+    result = _assert_structurally_valid_truncation(condenser.condense(view), view)
+
+    # The whole tool loop survives; only the trailing messages are cut.
+    loop_ids = {e.id for e in view.events[2:14]}
+    assert result.forgotten_event_ids.isdisjoint(loop_ids)
+    assert result.forgotten_event_ids
